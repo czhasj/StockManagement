@@ -23,6 +23,8 @@ MainWidget::MainWidget(QWidget *parent)
 
     // TableWidgetListDataFunc();
     InitTableWidgetFunc();
+
+
 }
 
 MainWidget::~MainWidget()
@@ -225,6 +227,7 @@ void MainWidget::on_pushButton_GoodsDelivery_clicked()
 //导出数据
 
 //导出表格控件数据，直接生成Excel文件保存
+#include "waitexportexcel.h"
 void MainWidget::on_pushButton_LoadData_clicked()
 {
     //尝试多线程，COM 操作需要在主线程中执行，因此将所有与 COM 相关的操作放回主线程。
@@ -252,6 +255,9 @@ void MainWidget::on_pushButton_LoadData_clicked()
         // 2：应用文件对话框来保存要导出文件名称(设置保存的文件名称)及数据信息
         QString strFileName=QFileDialog::getSaveFileName(this,tr("Excel Files"),QString("./%1%2.xls").arg(strTemp).arg("_kcgl"),tr("Excel Files(*.xls)"));
         // QMessageBox::information(this,"测试",strFileName);
+        WaitExportExcel *wait = new WaitExportExcel();
+        wait->show();
+        connect(this,&MainWidget::updataPrecent,wait,&WaitExportExcel::changeProgressBar);
         // 3：处理工作簿
         if(strFileName!=NULL)
         {
@@ -266,13 +272,16 @@ void MainWidget::on_pushButton_LoadData_clicked()
                 QAxObject *workbook=excel->querySubObject("ActiveWorkBook"); // 获得当前工作簿
                 QAxObject *worksheet=workbook->querySubObject("Worksheets(int)",1);
                 QAxObject *cell;
-
+                double sum = ui->tableWidget_ListData->columnCount() + ui->tableWidget_ListData->columnCount() * ui->tableWidget_ListData->rowCount();
+                double num = 0;
                 // 1：添加Excel文件表头数据
                 for(int i=1;i<=ui->tableWidget_ListData->columnCount();i++)
                 {
                     cell=worksheet->querySubObject("Cells(int,int)",1,i);
                     cell->setProperty("RowHeight",25);
                     cell->dynamicCall("SetValue(const QString&)",ui->tableWidget_ListData->horizontalHeaderItem(i-1)->data(0).toString());
+                    num ++;
+                    emit updataPrecent(num/sum);
                 }
 
                 // 2：将表格数据保存到Excel文件当中
@@ -289,6 +298,8 @@ void MainWidget::on_pushButton_LoadData_clicked()
                             cell = worksheet->querySubObject("Cells(int,int)", j, k);
                             cell->dynamicCall("SetValue(const QString&)", "");
                         }
+                        num++;
+                        emit updataPrecent(num/sum);
                     }
                 }
                 // 3：将刚才创建的Excel文件直接保存到指定的目录下
@@ -297,6 +308,8 @@ void MainWidget::on_pushButton_LoadData_clicked()
                 excel->dynamicCall("Quit()");
                 delete excel;
                 excel=NULL;
+                wait->close();
+                QMessageBox::information(this,"提示","导出Excel文件成功！");
             }
         }
 }

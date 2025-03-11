@@ -62,5 +62,6 @@ private:
     Ui::MainWidget *ui;
 signals:
     void updataId(QString ID);
+    void updataPrecent(double precent);
 };
 #endif // MAINWIDGET_H

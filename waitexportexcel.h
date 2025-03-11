@@ -17,6 +17,8 @@ public:
 
 private:
     Ui::WaitExportExcel *ui;
+public slots:
+    void changeProgressBar(double precent);
 };
 
 #endif // WAITEXPORTEXCEL_H
